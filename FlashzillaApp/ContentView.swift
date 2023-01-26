@@ -15,8 +15,10 @@ extension View {
 }
 
 struct ContentView: View {
-    @State private var cards = Array<Card>(repeating: Card.example, count: 10)
+    @State private var showingEdit = false
+    @State private var cards = [Card]()
     @Environment(\.accessibilityDifferentiateWithoutColor) var differentiateWithoutColor
+    @Environment(\.accessibilityVoiceOverEnabled) var voiceoverEnabled
     
     @State private var timeRemaining = 100
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -47,6 +49,8 @@ struct ContentView: View {
                         }
                         //.offset(x: 0, y: Double(cards.count - index) * 10)
                         .stacked(at: index, in: cards.count)
+                        .allowsHitTesting(index == cards.count - 1)
+                        .accessibilityHidden(index < cards.count - 1)
                         
                         //For the code above you can use an extension or the
                         // code itself.
@@ -62,20 +66,57 @@ struct ContentView: View {
                         .clipShape(Capsule())
                 }
             }
-            if differentiateWithoutColor {
-                VStack  {
+            VStack {
+                HStack{
                     Spacer()
-                    HStack {
-                        Image(systemName: "xmark.circle")
-                            .padding()
-                            .background(.black.opacity(0.7))
-                            .clipShape(Circle())
-                        Spacer()
-                        Image(systemName: "checkmark.circle")
+                    Button {
+                        showingEdit = true
+                    } label: {
+                        Image(systemName: "plus.circle")
                             .padding()
                             .background(.black.opacity(0.7))
                             .clipShape(Circle())
                     }
+                }
+                Spacer()
+            }
+            .foregroundColor(.white)
+            .font(.largeTitle)
+            .padding()
+            
+            if differentiateWithoutColor || voiceoverEnabled {
+                VStack  {
+                    Spacer()
+                    HStack {
+                        Button {
+                            withAnimation {
+                                removeCard(at: cards.count - 1)
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle")
+                                .padding()
+                                .background(.black.opacity(0.7))
+                                .clipShape(Circle())
+                        }
+                        
+                        .accessibilityLabel("Wrong")
+                        .accessibilityHint("Mark your answer as being incorrect")
+                        Spacer()
+                        Button{
+                            withAnimation {
+                                removeCard(at: cards.count - 1)
+                            }
+                        } label: {
+                            Image(systemName: "checkmark.circle")
+                                .padding()
+                                .background(.black.opacity(0.7))
+                                .clipShape(Circle())
+                        }
+                        .accessibilityLabel("Correct")
+                        .accessibilityHint("Mark your answer as being correct")
+                        
+                    }
+                    
                     .foregroundColor(.white)
                     .font(.largeTitle)
                     .padding()
@@ -97,8 +138,11 @@ struct ContentView: View {
                 isActive = false
             }
         }
+        .sheet(isPresented: $showingEdit, onDismiss: resetCards, content: EditCards.init)
+        .onAppear(perform: resetCards)
     }
     func removeCard(at index: Int) {
+        guard index >= 0 else { return }
         cards.remove(at: index)
         
         if cards.isEmpty {
@@ -106,10 +150,18 @@ struct ContentView: View {
         }
     }
     
+    func loadData() {
+        if let data = UserDefaults.standard.data(forKey: "Cards") {
+            if let decoded = try? JSONDecoder().decode([Card].self, from: data) {
+                cards = decoded
+            }
+        }
+    }
+    
     func resetCards() {
-        cards = Array(repeating: Card.example, count: 10)
         timeRemaining = 100
         isActive = true
+        loadData()
     }
 }
 
