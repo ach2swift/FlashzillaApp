@@ -51,7 +51,6 @@ struct EditCards: View {
                 cards = decoded
             }
         }
-            
     }
     
     func save() {
