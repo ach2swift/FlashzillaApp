@@ -12,6 +12,11 @@ extension View {
         let offset = Double(total - position)
         return self.offset(x: 0, y: offset * 10)
     }
+    
+    func stackedID(at position: Int, in total: Int) -> some View {
+        let offset = Double(total - position)
+        return self.offset(x: 0, y: offset * 10)
+    }
 }
 
 struct ContentView: View {
@@ -41,14 +46,17 @@ struct ContentView: View {
                     .clipShape(Capsule())
                 
                 ZStack {
-                    ForEach(0..<cards.count, id: \.self) { index in
-                        CardView(card: cards[index]) {
+                    // ForEach(0..<cards.count, id: \.self) { index in
+                    ForEach(Array(cards.enumerated()), id: \.element ) { index, card in
+                        // CardView(card: cards[index]) {
+                        CardView(card: card) { add in
                             withAnimation {
-                                removeCard(at: index)
+                                // removeCard(at: index)
+                                removeCardID(card: card, add: add)
                             }
                         }
-                        //.offset(x: 0, y: Double(cards.count - index) * 10)
-                        .stacked(at: index, in: cards.count)
+                        .offset(x: 0, y: Double(cards.count - index) * 10)
+                        //.stacked(at: index, in: cards.count)
                         .allowsHitTesting(index == cards.count - 1)
                         .accessibilityHidden(index < cards.count - 1)
                         
@@ -145,6 +153,24 @@ struct ContentView: View {
         guard index >= 0 else { return }
         cards.remove(at: index)
         
+        if cards.isEmpty {
+            isActive = false
+        }
+    }
+    
+    func removeCardID(card: Card, add: Bool) {
+        if add {
+            if let index = cards.firstIndex(where: { $0.id == card.id } ) {
+                cards.remove(at: index)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    cards.insert(card, at: 0)
+                }
+            }
+        } else {
+            if let index = cards.firstIndex(where: { $0.id == card.id } ) {
+                cards.remove(at: index)
+            }
+        }
         if cards.isEmpty {
             isActive = false
         }

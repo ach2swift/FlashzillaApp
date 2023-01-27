@@ -10,7 +10,8 @@ import SwiftUI
 struct CardView: View {
     
     let card: Card
-    var removal: (() -> Void)? = nil
+    //var removal: (() -> Void)? = nil
+    var removal: ((Bool) -> Void)? = nil
     
     @State private var feedback = UINotificationFeedbackGenerator()
     
@@ -19,6 +20,7 @@ struct CardView: View {
     
     @State private var isShowingAnswer = false
     @State private var offset = CGSize.zero
+    
     
     var body: some View {
         ZStack {
@@ -33,7 +35,9 @@ struct CardView: View {
                     differentiateWithoutColor
                     ? nil
                     : RoundedRectangle(cornerRadius: 25, style: .continuous)
-                        .fill(offset.width > 0 ? .green : .red)
+                       // .fill(offset.width > 0 ? .green : .red)
+                    //Challenge 2.
+                        .fill(self.setColor(for: offset.width))
                 )
                 .shadow(radius: 10)
             
@@ -73,11 +77,12 @@ struct CardView: View {
                     //remove the card
                     if offset.width < 0 {
                         feedback.notificationOccurred(.error)
+                        removal?(true)
+                    } else {
+                        removal?(false)
                     }
-                    removal?()
-                    
                 } else {
-                    offset = .zero
+                        offset = .zero
                 }
             }
         )
@@ -86,6 +91,17 @@ struct CardView: View {
         }
         .animation(.spring(), value: offset)
     }
+    
+    func setColor(for offset: CGFloat) -> Color {
+            switch offset {
+            case let a where a > 0:
+                return .green
+            case let b where b < 0:
+                return .red
+            default:
+                return .white
+            }
+        }
 }
 
 struct CardView_Previews: PreviewProvider {
